@@ -59,7 +59,7 @@
         const pdfViewer = document.getElementById('pdf-viewer');
 
         // Fetch PDF document
-        const url = 'https://dea01ce1-c473-4266-9200-978de9c1a3e5.filesusr.com/ugd/1c0598_b3bf86d5b03a4e72943d35636658befb.pdf';
+        const url = 'https://github.com/MovestilAssis/Flipbook_Site_Movestil/raw/main/1c0598_b3bf86d5b03a4e72943d35636658befb.pdf';
         pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
             pdfDoc = pdfDoc_;
             renderPage(pageNum);
@@ -88,8 +88,6 @@
                     }
                 });
             });
-
-            document.getElementById('page-num').textContent = pageNum;
         }
 
         // Go to previous page
