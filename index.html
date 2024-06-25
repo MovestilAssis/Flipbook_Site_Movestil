@@ -3,40 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Flipbook Viewer</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Link to your CSS file -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script> <!-- jQuery -->
-    <script src="turn.min.js"></script> <!-- Turn.js library -->
+    <title>Custom PDF Viewer</title>
     <style>
-        /* Additional styles if needed */
         body {
             margin: 0;
             padding: 0;
-            background-color: #f0f0f0;
             font-family: Arial, sans-serif;
+            background-color: #f0f0f0; /* Light background color */
         }
-        #flipbook {
+        #pdf-container {
             width: 100%;
-            height: 800px; /* Adjust height as needed */
-            background-color: #fff; /* Page background color */
+            height: 100vh; /* Full viewport height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #pdf-viewer {
+            width: 80%; /* Adjust width as needed */
+            height: 80vh; /* Adjust height as needed */
+            border: 1px solid #ccc; /* Border for the viewer */
+            background-color: #fff; /* Viewer background color */
+        }
+        .pdf-control {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
         }
     </style>
 </head>
 <body>
-    <div id="flipbook">
-        <!-- PDF viewer using iframe -->
-        <iframe src="https://dea01ce1-c473-4266-9200-978de9c1a3e5.filesusr.com/ugd/1c0598_b3bf86d5b03a4e72943d35636658befb.pdf" style="width:100%; height:800px;" frameborder="0"></iframe>
+    <div id="pdf-container">
+        <div id="pdf-viewer"></div>
+    </div>
+    <div class="pdf-control">
+        <button onclick="toggleFullscreen()">Fullscreen</button>
+        <button onclick="prevPage()">Previous</button>
+        <button onclick="nextPage()">Next</button>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script> <!-- PDF.js library -->
     <script>
-        $(document).ready(function() {
-            $('#flipbook').turn({
-                width: '100%',
-                height: 800,
-                autoCenter: true, // Center the flipbook
-                display: 'double' // Display two pages at once
-            });
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+
+        // Initialize PDF.js
+        const pdfViewer = document.getElementById('pdf-viewer');
+
+        // Fetch PDF document
+        const url = 'https://dea01ce1-c473-4266-9200-978de9c1a3e5.filesusr.com/ugd/1c0598_b3bf86d5b03a4e72943d35636658befb.pdf';
+        pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
+            pdfDoc = pdfDoc_;
+            renderPage(pageNum);
         });
+
+        // Render specified page
+        function renderPage(num) {
+            pageRendering = true;
+            pdfDoc.getPage(num).then(function(page) {
+                const viewport = page.getViewport({ scale: 1.0 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+
+                pdfViewer.innerHTML = '';
+                pdfViewer.appendChild(canvas);
+
+                page.render(renderContext).promise.then(function() {
+                    pageRendering = false;
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                });
+            });
+
+            document.getElementById('page-num').textContent = pageNum;
+        }
+
+        // Go to previous page
+        function prevPage() {
+            if (pageNum <= 1) {
+                return;
+            }
+            pageNum--;
+            renderPage(pageNum);
+        }
+
+        // Go to next page
+        function nextPage() {
+            if (pageNum >= pdfDoc.numPages) {
+                return;
+            }
+            pageNum++;
+            renderPage(pageNum);
+        }
+
+        // Toggle fullscreen mode
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Event listener for fullscreen change
+        document.addEventListener('fullscreenchange', function() {
+            if (document.fullscreenElement) {
+                document.querySelector('.pdf-control').style.display = 'none'; // Hide controls in fullscreen
+            } else {
+                document.querySelector('.pdf-control').style.display = 'block'; // Show controls after exiting fullscreen
+            }
+        });
+
     </script>
 </body>
 </html>
